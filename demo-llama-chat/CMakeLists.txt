@@ -1,13 +1,14 @@
 # Copyright (c) Alpaca Core
 # SPDX-License-Identifier: MIT
 #
-cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
+# cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 set(APP_NAME "demo-llama-chat")
 set(APP_BUNDLE_IDENTIFIER "LLamaChat")
 set(DEVELOPMENT_TEAM_ID "F6YK5TUHJ7")
 set(CODE_SIGN_IDENTITY "Apple Development")
 set(APP_BUNDLE_DISPLAY_NAME "LLama chat")
+set(DEPLOYMENT_TARGET 17.5)
 
 set(PRODUCT_NAME ${APP_NAME})
 set(EXECUTABLE_NAME ${APP_NAME})
@@ -23,8 +24,6 @@ set(MACOSX_FRAMEWORK_IDENTIFIER ${APP_BUNDLE_IDENTIFIER})
 
 # Specify the entitlements file path
 set(ENTITLEMENTS_FILE "${CMAKE_SOURCE_DIR}/iOS/AppGroup.entitlements")
-
-cmake_minimum_required(VERSION 3.30)
 
 set(APP_HEADER_FILES
 )
@@ -51,7 +50,7 @@ add_executable(
 
 # From the Root CMAKE there are C++ compile options which conflict with Swift compiler
 # so we clear them here
-set_target_properties(${APP_NAME} PROPERTIES COMPILE_OPTIONS "")
+# set_target_properties(${APP_NAME} PROPERTIES COMPILE_OPTIONS "")
 
 # Link the Payload Obj-C++ wrapper library
 target_link_libraries(${APP_NAME}
@@ -70,7 +69,7 @@ set_target_properties(${APP_NAME} PROPERTIES
                       XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
                       XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${ENTITLEMENTS_FILE}"
                       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
-                      MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/app.plist.in
+                      MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/app.plist.in"
                       XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
                       XCODE_ATTRIBUTE_COMBINE_HIDPI_IMAGES NO
                       XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
