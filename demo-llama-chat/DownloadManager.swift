@@ -10,7 +10,6 @@ func readFileFromLocalFolder() -> String {
     let downloads = try! fileManager.url(for: .documentDirectory, in: .allDomainsMask, appropriateFor: nil, create: false)
     let downloadDst = downloads.appendingPathComponent("alpaca-ai")
 
-    // Define the file name and create a file URL in the shared container
     let fileName = "default.txt"
     let fileURL = downloadDst.appendingPathComponent(fileName)
 
@@ -19,24 +18,8 @@ func readFileFromLocalFolder() -> String {
     return getContentFromFile(fileURL: fileURL)
 }
 
-func readFileFromBookmarked() -> String {
-    let originalFilename = "default.txt"
-    let bookmarkURL = getSavedBookmarkURL()
-    let file = bookmarkURL.appendingPathComponent(originalFilename)
-
-    print("Reading file from: \(file.path)")
-
-    return getContentFromFile(fileURL: file)
-}
-
 func readFileContentString() -> String{
-    let shouldReadFromGlobal = true
-
-    if shouldReadFromGlobal {
-        return readFileFromBookmarked()
-    } else {
         return readFileFromLocalFolder()
-    }
 }
 
 func getContentFromFile(fileURL: URL) -> String {
@@ -56,99 +39,6 @@ func getContentFromFile(fileURL: URL) -> String {
         print("Error reading file from App Group container: \(error.localizedDescription)")
     }
     return ""
-}
-func getMyURLForBookmark() -> URL {
-    let fileManager = FileManager.default
-    let docs = try! fileManager.url(for: .documentDirectory, in: .allDomainsMask, appropriateFor: nil, create: false)
-
-    return docs.appendingPathComponent("alpaca-ai-bookmark.txt")
-}
-
-func getSavedBookmarkURL() -> URL {
-    let bookmarkData = try! Data(contentsOf: getMyURLForBookmark())
-    var isStale = false
-    let url = try! URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
-    return url!
-}
-
-class ExportViewController: UIViewController, UIDocumentPickerDelegate {
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        exportFile()  // Trigger the file export after the view has appeared
-    }
-
-    func exportFile() {
-        let fileManager = FileManager.default
-        let downloads = try! fileManager.url(for: .documentDirectory, in: .allDomainsMask, appropriateFor: nil, create: false)
-        let dirURL = downloads.appendingPathComponent("alpaca-ai")
-
-        try? fileManager.createDirectory(at: dirURL, withIntermediateDirectories: true)
-
-        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
-        documentPicker.directoryURL = dirURL
-        documentPicker.delegate = self
-
-        print("Doc picker: Alpaca folder is \(dirURL.path)")
-
-        present(documentPicker, animated: true, completion: nil)
-    }
-
-    func createSampleFile() -> URL {
-        let fileManager = FileManager.default
-        let downloads = try! fileManager.url(for: .documentDirectory, in: .allDomainsMask, appropriateFor: nil, create: false)
-        let downloadDst = downloads.appendingPathComponent("alpaca-ai")
-
-        return downloadDst.appendingPathComponent("default.txt")
-    }
-
-    // UIDocumentPickerDelegate methods
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        // From apple docs:
-        // =========================
-        // Start accessing a security-scoped resource.
-        guard urls.first!.startAccessingSecurityScopedResource() else {
-            // Handle the failure here.
-            return
-        }
-
-
-        // Make sure you release the security-scoped resource when you finish.
-        defer { urls.first!.stopAccessingSecurityScopedResource() }
-        // =========================
-
-        guard let destinationURL = urls.first else { return }
-        var dst = destinationURL
-
-        print("Picked dest is \(destinationURL)")
-        dst = dst.appendingPathComponent("alpaca-ai")
-
-        writeAsBookmark(url: dst)
-    }
-
-    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        print("Document picker was cancelled.")
-    }
-
-    func writeAsBookmark(url: URL) {
-        do {
-            // Start accessing a security-scoped resource.
-            guard url.startAccessingSecurityScopedResource() else {
-                // Handle the failure here.
-                return
-            }
-
-            // Make sure you release the security-scoped resource when you finish.
-            defer { url.stopAccessingSecurityScopedResource() }
-
-            let bookmarkData = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
-
-            try bookmarkData.write(to: getMyURLForBookmark())
-        }
-        catch let error {
-            // Handle the error here.
-        }
-    }
 }
 
 class DownloadManager: NSObject, URLSessionDownloadDelegate {
@@ -177,6 +67,12 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
             print("Create dir error: \(error.localizedDescription)")
         }
         print("Alpaca folder is \(downloadDst!.path)")
+        var filePath = Bundle.main.path(forResource: "gpt2-117m-q6_k", ofType: "gguf")
+        if filePath == nil {
+            print("gpt2-117m-q6_k.gguf not found")
+            return
+        }
+        print("Resource path is \(filePath!)")
     }
 
     func startDownload(from url: URL) {
@@ -200,31 +96,19 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
 
         print("current dir: \(FileManager.default.currentDirectoryPath)")
         let fileManager = FileManager.default
+        let destURL = downloadDst!.appendingPathComponent(originalFilename)
 
         do {
-            var destURL = location
-            if downloadIntoSandBoxFolder {
-                destURL = downloadDst!.appendingPathComponent(originalFilename)
-            } else {
-                let bookmarkURL = getSavedBookmarkURL()
-                destURL = bookmarkURL.appendingPathComponent(originalFilename)
+            // Remove any existing file at the destination
+            if fileManager.fileExists(atPath: destURL.path) {
+                try fileManager.removeItem(at: destURL)
             }
+            // Move the file from the temporary location to the permanent location
+            try fileManager.moveItem(at: location, to: destURL)
 
-            do {
-                // Remove any existing file at the destination
-                if fileManager.fileExists(atPath: destURL.path) {
-                    try fileManager.removeItem(at: destURL)
-                }
-                // Move the file from the temporary location to the permanent location
-                try fileManager.moveItem(at: location, to: destURL)
-
-                print("File moved to: \(destURL.path)")
-            } catch {
-                print("Error moving file: \(error.localizedDescription)")
-            }
-        }
-        catch let error {
-            print("Bookmark: \(error)")
+            print("File moved to: \(destURL.path)")
+        } catch {
+            print("Error moving file: \(error.localizedDescription)")
         }
     }
 

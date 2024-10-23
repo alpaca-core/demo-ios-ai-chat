@@ -1,7 +1,7 @@
 # Copyright (c) Alpaca Core
 # SPDX-License-Identifier: MIT
 #
-# cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 set(APP_NAME "demo-llama-chat")
 set(APP_BUNDLE_IDENTIFIER "LLamaChat")
@@ -22,9 +22,6 @@ set(MACOSX_FRAMEWORK_BUNDLE_VERSION 1.0.0)
 set(MACOSX_FRAMEWORK_SHORT_VERSION_STRING 1.0.0)
 set(MACOSX_FRAMEWORK_IDENTIFIER ${APP_BUNDLE_IDENTIFIER})
 
-# Specify the entitlements file path
-# set(ENTITLEMENTS_FILE "${CMAKE_SOURCE_DIR}/iOS/AppGroup.entitlements")
-
 set(APP_HEADER_FILES
 )
 
@@ -34,7 +31,10 @@ set(APP_SOURCE_FILES
     ./DownloadManager.swift
 )
 
+ac_dep(test-data-llama)
+
 set(RESOURCES
+    ${ac-test-data-llama_SOURCE_DIR}/gpt2-117m-q6_k.gguf
 )
 
 add_executable(
