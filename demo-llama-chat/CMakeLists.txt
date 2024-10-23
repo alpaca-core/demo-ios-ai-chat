@@ -56,11 +56,11 @@ PUBLIC
 # so we clear them here
 # set_target_properties(${APP_NAME} PROPERTIES COMPILE_OPTIONS "")
 
-# Link the Payload Obj-C++ wrapper library
-# target_link_libraries(${APP_NAME}
-#     PRIVATE
-#         AlpacaCoreSwift
-# )
+# Link the AlpacaCore's Swift wrapper
+target_link_libraries(${APP_NAME}
+    PRIVATE
+        AlpacaCoreSwift
+)
 
 # Create the app target
 set_target_properties(${APP_NAME} PROPERTIES
@@ -71,7 +71,6 @@ set_target_properties(${APP_NAME} PROPERTIES
                       XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${DEPLOYMENT_TARGET}
                       XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
                       XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
-                    #   XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${ENTITLEMENTS_FILE}"
                       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
                       MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/app.plist.in"
                       XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
