@@ -2,51 +2,28 @@
 // SPDX-License-Identifier: MIT
 //
 import Foundation
-import UIKit
-import MobileCoreServices
 
-func readFileFromLocalFolder() -> String {
+func fileSize(atPath path: String) -> Int64? {
     let fileManager = FileManager.default
-    let downloads = try! fileManager.url(for: .documentDirectory, in: .allDomainsMask, appropriateFor: nil, create: false)
-    let downloadDst = downloads.appendingPathComponent("alpaca-ai")
 
-    let fileName = "default.txt"
-    let fileURL = downloadDst.appendingPathComponent(fileName)
-
-    print("Reading file from: \(fileURL.path)")
-
-    return getContentFromFile(fileURL: fileURL)
-}
-
-func readFileContentString() -> String{
-        return readFileFromLocalFolder()
-}
-
-func getContentFromFile(fileURL: URL) -> String {
     do {
-        // read only the first 16 bytes of the file since it might be too big (100-200 mb)
-        let handle = try FileHandle(forReadingFrom: fileURL)
-        let first16Bytes: Data? = try handle.read(upToCount: 16)
-        try handle.close()
-        guard let bytes = first16Bytes else {
-            print("Cannot read dataa - 16 bytes!")
-            return ""
+        let attributes = try fileManager.attributesOfItem(atPath: path)
+        if let fileSize = attributes[.size] as? Int64 {
+            return fileSize
         }
-        let content = String(data: bytes, encoding: .utf8)
-        print("File read from App Group container: \(content)")
-        return content! + "\n"
     } catch {
-        print("Error reading file from App Group container: \(error.localizedDescription)")
+        print("Error retrieving file size: \(error.localizedDescription)")
     }
-    return ""
+
+    return nil
 }
 
 class DownloadManager: NSObject, URLSessionDownloadDelegate {
-
     var downloadTask: URLSessionDownloadTask?
     var session: URLSession?
     var originalFilename = "default.txt"
-    var progressCb: (Int64, Int64)->()?
+    var progressCb: Optional<(Int64, Int64)->()>
+    var finishCb: Optional<(String)->()>
     var cache: URLCache?
     var downloadDst: URL?
     let downloadIntoSandBoxFolder = false
@@ -57,22 +34,19 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
             print("Progress \(dp)")
 
         }
+        self.finishCb = { (path) -> Void in
+            print("Downlad finished for: \(path)")
+        }
 
         let fileManager = FileManager.default
-        let downloads = try! fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        let downloads = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
         downloadDst = downloads!.appendingPathComponent("alpaca-ai")
         do {
             try fileManager.createDirectory(atPath: downloadDst!.path, withIntermediateDirectories: true)
         } catch {
             print("Create dir error: \(error.localizedDescription)")
         }
-        print("Alpaca folder is \(downloadDst!.path)")
-        var filePath = Bundle.main.path(forResource: "gpt2-117m-q6_k", ofType: "gguf")
-        if filePath == nil {
-            print("gpt2-117m-q6_k.gguf not found")
-            return
-        }
-        print("Resource path is \(filePath!)")
+        print("AlpacaAI download folder is \(downloadDst!.path)")
     }
 
     func startDownload(from url: URL) {
@@ -96,7 +70,8 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
 
         print("current dir: \(FileManager.default.currentDirectoryPath)")
         let fileManager = FileManager.default
-        let destURL = downloadDst!.appendingPathComponent(originalFilename)
+        let requestedFileName = downloadTask.originalRequest?.url?.path().split(separator: "/").last
+        let destURL = downloadDst!.appendingPathComponent(String(requestedFileName!))
 
         do {
             // Remove any existing file at the destination
@@ -107,6 +82,9 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
             try fileManager.moveItem(at: location, to: destURL)
 
             print("File moved to: \(destURL.path)")
+            if finishCb != nil {
+                finishCb!(destURL.path)
+            }
         } catch {
             print("Error moving file: \(error.localizedDescription)")
         }
@@ -114,8 +92,9 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
 
     /* Sent periodically to notify the delegate of download progress. */
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-
-        progressCb(totalBytesWritten, totalBytesExpectedToWrite)
+        if progressCb != nil {
+            progressCb!(totalBytesWritten, totalBytesExpectedToWrite)
+        }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
@@ -125,12 +104,4 @@ class DownloadManager: NSObject, URLSessionDownloadDelegate {
             print("Download successful")
         }
     }
-}
-
-func downloadFile(manager: DownloadManager) {
-    guard let url = URL(string: "https://ed03-78-130-168-52.ngrok-free.app/default_small.txt") else {
-        return
-    }
-
-    manager.startDownload(from: url)
 }

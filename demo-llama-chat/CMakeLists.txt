@@ -8,7 +8,7 @@ set(APP_BUNDLE_IDENTIFIER "LLamaChat")
 set(DEVELOPMENT_TEAM_ID "F6YK5TUHJ7")
 set(CODE_SIGN_IDENTITY "Apple Development")
 set(APP_BUNDLE_DISPLAY_NAME "LLama chat")
-set(DEPLOYMENT_TARGET 17.5)
+set(DEPLOYMENT_TARGET 18.0)
 
 set(PRODUCT_NAME ${APP_NAME})
 set(EXECUTABLE_NAME ${APP_NAME})
@@ -29,6 +29,8 @@ set(APP_SOURCE_FILES
     ./ContentView.swift
     ./LlamaChatApp.swift
     ./DownloadManager.swift
+    ./ModelRegistry.swift
+    ./ChatInference.swift
 )
 
 ac_dep(test-data-llama)
@@ -45,11 +47,15 @@ add_executable(
     ${RESOURCES}
 )
 
-set(CMAKE_Swift_FLAGS_DEBUG "-Onone")
-
 target_compile_options(${APP_NAME}
 PUBLIC
   $<$<COMPILE_LANGUAGE:Swift>:-cxx-interoperability-mode=default -Xcc -std=c++20 -Onone>
+)
+
+target_include_directories(${APP_NAME}
+    PRIVATE
+    ${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug-iphoneos
+    ${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug-iphonesimulator
 )
 
 # From the Root CMAKE there are C++ compile options which conflict with Swift compiler

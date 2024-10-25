@@ -3,92 +3,212 @@
 //
 import SwiftUI
 
-// Wrapper for ExportViewController
-struct ExportViewControllerWrapper: UIViewControllerRepresentable {
-    @Binding var isExporting: Bool  // A binding to control when to trigger the export action
-
-    func makeUIViewController(context: Context) -> ExportViewController {
-        return ExportViewController()  // Create an instance of ExportViewController
-    }
-
-    func updateUIViewController(_ uiViewController: ExportViewController, context: Context) {
-    }
-
-    func dismantleUIViewController(_ uiViewController: ExportViewController, coordinator: Coordinator) {
-        isExporting = false
-    }
-
+struct Message: Identifiable, Equatable {
+    let id = UUID()
+    let text: String
+    let isSentByCurrentUser: Bool
 }
 
-struct ContentView: View {
-    @State private var showText: Bool = false
-    @State private var textContent: String = ""
-    @State private var downloadProgressText: String = ""
-    @State private var manager: DownloadManager = DownloadManager()
-    @State private var isExporting = false
+struct ChatBubble: View {
+    var message: Message
+
+    var body: some View {
+        HStack {
+            if message.isSentByCurrentUser {
+                Spacer()
+            }
+
+            Text(message.text)
+                .padding()
+                .background(message.isSentByCurrentUser ? Color.blue : Color.gray.opacity(0.2))
+                .foregroundColor(message.isSentByCurrentUser ? .white : .black)
+                .cornerRadius(12)
+                .frame(maxWidth: 250, alignment: message.isSentByCurrentUser ? .trailing : .leading)
+
+            if !message.isSentByCurrentUser {
+                Spacer()
+            }
+        }
+        .padding(message.isSentByCurrentUser ? .leading : .trailing, 60)
+        .padding(.vertical, 5)
+    }
+}
+
+class ChatViewModel: ObservableObject {
+    @Published var messages: [Message] = [
+        Message(text: "Hi, how can I help you?", isSentByCurrentUser: false)
+    ]
+
+    func sendMessage(_ text: String, _ isUser: Bool) {
+        let newMessage = Message(text: text, isSentByCurrentUser: isUser)
+        messages.append(newMessage)
+    }
+}
+
+
+struct ModelSelector: View {
+    // Options for the dropdown
+    static var modelNames = ["capybarahermes-2.5-mistral-7b.Q4_0"]
+    @Binding var selectedModel: String?
+
+    @State private var registry: ModelRegistry
+    private var manager: DownloadManager?
+    @State private var downloadProgressText = ""
+    @State private var isDownloading = false
+
+    init(registry: ModelRegistry, selectedModel: Binding<String?>, manager: DownloadManager?) {
+        self.registry = registry
+        ModelSelector.modelNames = registry.models()
+
+        self._selectedModel = selectedModel
+        self.manager = manager
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Select a model:")
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            // Custom styled Picker
+            Menu {
+                ForEach(ModelSelector.modelNames, id: \.self) { model in
+                    Button(action: {
+                        selectedModel = model
+                    }) {
+                        Text(model)
+                            .padding()
+                            .foregroundColor(.primary)
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(selectedModel!)
+                        .foregroundColor(.white)
+                        .padding()
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .foregroundColor(.white)
+                        .padding()
+                }
+                .background(Color.blue) // Messenger app color
+                .cornerRadius(10)
+            }
+            .padding()
+
+            if !registry.exists(modelName: selectedModel!) {
+                Text("Model must be downloaded first.")
+                Button("Download", action: {
+                    manager!.progressCb = { (bytesWritten, totalBytes) -> Void in
+                        let dp: Float = Float((Float(bytesWritten) / Float(totalBytes)) * 100).rounded()
+
+//                        print("Progress \(dp)")
+                        downloadProgressText = "Progress \(dp)"
+                    }
+
+                    manager!.finishCb = { (filePath) -> Void in
+                        print("Finished downloading")
+                        isDownloading = false
+                        registry.register(modelPath: filePath)
+                    }
+
+                    guard let url = URL(string: registry.remotedModelPaths[selectedModel!] ?? "") else {
+                        print("Invalid URL")
+                        return
+                    }
+
+                    manager!.startDownload(from: url)
+
+                    isDownloading = true
+                })
+            }
+
+            if (isDownloading) {
+                Text(downloadProgressText)
+                    .padding()
+                    .foregroundColor(.secondary)
+            }
+
+        }
+        .padding()
+        .background(Color(UIColor.systemGray6)) // Light background for contrast
+        .cornerRadius(12)
+        .shadow(radius: 5) // Add shadow for depth
+        .padding()
+    }
+}
+
+struct ChatScreen: View {
+    @StateObject private var viewModel = ChatViewModel()
+    @State private var messageText: String = ""
+    @State private var selectedModel: String? = "capybarahermes-2.5-mistral-7b.Q4_0"
+    private var manager: DownloadManager = DownloadManager()
+    private var modelRegistry: ModelRegistry = ModelRegistry()
+    private var chatInference: ChatInference = ChatInference()
+    private var isLoading: Bool = false
 
     var body: some View {
         VStack {
-            Button(action: self.downloadFileToAppGroup, label: {
-                Text("Download file")
-                    .padding()
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
-            })
-            Button(action: self.readFileContent, label: {
-                Text("Read Content")
-                    .padding()
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
-            })
+//            ProgressView("Loading...")
+//                .progressViewStyle(CircularProgressViewStyle())
+//                .padding()
 
-            Button(action: {
-                print("Exporting \(isExporting)")
-                isExporting = true  // Set this to true to trigger the export action
-                print("Exporting \(isExporting)")
-
-            }, label: {
-                Text("Export File")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            })
-            .sheet(isPresented: $isExporting) {
-                ExportViewControllerWrapper(isExporting: $isExporting)  // Embed the view controller wrapper
+            ModelSelector(registry: modelRegistry, selectedModel: $selectedModel, manager: manager)
+                .onChange(of: selectedModel, perform: { model in
+                    if let model {
+                        print("Loading model: \(model)")
+                        let fullModelPath = modelRegistry.getModelLocalPath(modelName: model)
+                        if fullModelPath != nil {
+                            let _ = chatInference.createInstance(modelName: selectedModel!, modelPath: fullModelPath!)
+                        }
+                    }
+                })
+            ScrollViewReader { scrollView in
+                ScrollView {
+                    ForEach(viewModel.messages) { message in
+                        ChatBubble(message: message)
+                            .id(message.id)
+                    }
+                    .padding(.horizontal)
+                }
+                .onChange(of: viewModel.messages) { _ in
+                    if let lastIndex = viewModel.messages.last?.id {
+                         withAnimation {
+                             scrollView.scrollTo(lastIndex, anchor: .bottom)
+                         }
+                     }
+                }
             }
 
 
-            Text(downloadProgressText)
-                .foregroundColor(.green)
-                .frame(alignment: .topLeading)
-            ScrollView {
-                Text(textContent)
-                    .foregroundColor(.green)
-                    .frame(alignment: .topLeading)
+            HStack {
+                TextField("Type a message", text: $messageText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(minHeight: 30)
+
+                Button(action: {
+                    if !messageText.isEmpty {
+                        viewModel.sendMessage(messageText, true)
+                        let resultText = chatInference.sendPrompt(messageText)
+                        viewModel.sendMessage(resultText, false)
+                        messageText = ""
+                    }
+                }) {
+                    Text("Send")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
             }
+            .padding()
         }
-        .padding()
+        .navigationTitle("Chat with AI")
     }
-
-    func readFileContent() {
-        textContent += ">" + readFileContentString()
-    }
-
-    func downloadFileToAppGroup() {
-        manager.progressCb = { (bytesWritten, totalBytes) -> Void in
-            let dp: Float = Float((Float(bytesWritten) / Float(totalBytes)) * 100).rounded()
-            print("Progress \(dp)")
-            downloadProgressText = "Progress \(dp)"
-
-        }
-        downloadFile(manager: self.manager)
-    }
-
 }
 
-#Preview {
-    ContentView()
+struct ChatScreen_Previews: PreviewProvider {
+    static var previews: some View {
+        ChatScreen()
+    }
 }

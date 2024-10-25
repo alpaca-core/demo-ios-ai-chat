@@ -7,7 +7,7 @@ import SwiftUI
 struct LlamaChatApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ChatScreen()
         }
     }
 }
