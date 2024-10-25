@@ -9,6 +9,7 @@ class ModelRegistry {
 
     init() {
         remotedModelPaths["capybarahermes-2.5-mistral-7b.Q4_0"] = "https://huggingface.co/TheBloke/CapybaraHermes-2.5-Mistral-7B-GGUF/resolve/main/capybarahermes-2.5-mistral-7b.Q4_0.gguf"
+        remotedModelPaths["tinyllama-1.1b-chat-v1.0.Q6_K"] = "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q6_K.gguf"
 
         let fileExtension = "gguf"
         // get all files in the bundle

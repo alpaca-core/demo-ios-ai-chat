@@ -33,9 +33,10 @@ class ChatInference {
              print("Failed to open file: \(String(cString: strerror(errno)))")
          }
 
-        let params = Dictionary<String, Any>()
+        var params = Dictionary<String, Any>()
         do {
             let model = try createModel(&desc, params, progress);
+            params["ctx_size"] = 2048
             instance = try model.createInstance("general", params)
         } catch {
             print("Error creating instance: \(error)")
