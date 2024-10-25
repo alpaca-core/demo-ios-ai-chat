@@ -29,6 +29,8 @@ project(demo-ios-llama-chat
 ######################
 # subdirs
 
+set(AC_COCOA_WRAPPER ON)
+set(AC_SWIFT_WRAPPER ON)
 add_subdirectory(ac-local)
 add_subdirectory(demo-llama-chat)
 
