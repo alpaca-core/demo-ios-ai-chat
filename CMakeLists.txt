@@ -31,6 +31,8 @@ project(demo-ios-llama-chat
 
 set(AC_COCOA_WRAPPER ON)
 set(AC_SWIFT_WRAPPER ON)
+set(BUILD_SHARED_LIBS OFF)
+
 add_subdirectory(ac-local)
 add_subdirectory(demo-llama-chat)
 
