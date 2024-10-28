@@ -15,7 +15,7 @@ class ChatInference {
         initSDK();
     }
 
-    public func createInstance(modelName: String, modelPath: String) -> Bool {
+    public func createInstance(modelName: String, modelPath: String) async -> Bool {
         instance = nil
 
         var desc = ModelDesc()
@@ -24,9 +24,23 @@ class ChatInference {
 
         var params = Dictionary<String, Any>()
         do {
-            let model = try createModel(&desc, params);
-            params["ctx_size"] = 2048
-            instance = try model.createInstance("general", params)
+            let model = try await withCheckedThrowingContinuation { continuation in
+                do {
+                    let model = try createModel(&desc, params)
+                    continuation.resume(returning: model)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+            params["ctx_size"] = 16
+            instance = try await withCheckedThrowingContinuation { continuation in
+                do {
+                    let instance = try model.createInstance("general", params)
+                    continuation.resume(returning: instance)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         } catch {
             print("Error creating instance: \(error)")
             return false
@@ -35,7 +49,15 @@ class ChatInference {
         do {
             var inferenceParams = Dictionary<String, Any>()
             inferenceParams["setup"] = "Hi, how can I help you?"
-            let _ = try instance!.runOp("begin-chat", inferenceParams);
+            // Wrap the synchronous runOp call in an asynchronous task
+            try await withCheckedThrowingContinuation { continuation in
+                do {
+                    let _ = try instance!.runOp("begin-chat", inferenceParams)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         } catch {
             print("Error running operation: \(error)")
         }
@@ -43,7 +65,7 @@ class ChatInference {
         return true
     }
 
-    public func sendPrompt(_ prompt: String) -> String {
+    public func sendPrompt(_ prompt: String) async -> String {
         if (instance == nil) {
             return "Error: Instance not created"
         }
@@ -52,9 +74,24 @@ class ChatInference {
         inferenceParams["prompt"] = prompt
 
         do {
-            let _ = try instance!.runOp("add-chat-prompt", inferenceParams, progress)
+            try await withCheckedThrowingContinuation { continuation in
+                do {
+                    let _ = try instance!.runOp("add-chat-prompt", inferenceParams, progress)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
             inferenceParams = Dictionary<String, Any>()
-            let result = try instance!.runOp("get-chat-response", inferenceParams, progress)
+            var result: Dictionary<String, Any> = Dictionary<String, Any>()
+            try await withCheckedThrowingContinuation { continuation in
+                do {
+                    result = try instance!.runOp("get-chat-response", inferenceParams, progress)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
             return result["response"] as! String
         } catch {
             return "Error running operation: \(error)"

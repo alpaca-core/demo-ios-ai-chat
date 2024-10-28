@@ -160,7 +160,9 @@ struct ChatScreen: View {
                         print("Loading model: \(model)")
                         let fullModelPath = modelRegistry.getModelLocalPath(modelName: model)
                         if fullModelPath != nil {
-                            let _ = chatInference.createInstance(modelName: selectedModel!, modelPath: fullModelPath!)
+                            Task {
+                                let _ = await chatInference.createInstance(modelName: selectedModel!, modelPath: fullModelPath!)
+                            }
                         }
                     }
                 })
@@ -192,8 +194,10 @@ struct ChatScreen: View {
                 Button(action: {
                     if !messageText.isEmpty {
                         viewModel.sendMessage(messageText, true)
-                        let resultText = chatInference.sendPrompt(messageText)
-                        viewModel.sendMessage(resultText, false)
+                        Task {
+                            var resultText = await chatInference.sendPrompt(messageText)
+                            viewModel.sendMessage(resultText, false)
+                        }
                         messageText = ""
                     }
                 }) {
