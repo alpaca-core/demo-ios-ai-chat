@@ -45,14 +45,14 @@ class ChatInference {
 
     public func sendPrompt(_ prompt: String) -> String {
         if (instance == nil) {
-            return "Instance not created"
+            return "Error: Instance not created"
         }
 
         var inferenceParams = Dictionary<String, Any>()
         inferenceParams["prompt"] = prompt
 
         do {
-            try instance!.runOp("add-chat-prompt", inferenceParams, progress)
+            let _ = try instance!.runOp("add-chat-prompt", inferenceParams, progress)
             inferenceParams = Dictionary<String, Any>()
             let result = try instance!.runOp("get-chat-response", inferenceParams, progress)
             return result["response"] as! String
