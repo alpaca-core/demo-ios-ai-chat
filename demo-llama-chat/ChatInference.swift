@@ -22,20 +22,9 @@ class ChatInference {
         desc.inferenceType = "llama.cpp"
         desc.assets.append(AssetInfo(modelPath, modelName))
 
-        // Attempt to open the file using fopen
-        let filePointer = fopen(modelPath, "r") // Open for reading
-
-        if filePointer != nil {
-             print("File opened successfully: \(modelPath)")
-             // Close the file when done
-             fclose(filePointer)
-         } else {
-             print("Failed to open file: \(String(cString: strerror(errno)))")
-         }
-
         var params = Dictionary<String, Any>()
         do {
-            let model = try createModel(&desc, params, progress);
+            let model = try createModel(&desc, params);
             params["ctx_size"] = 2048
             instance = try model.createInstance("general", params)
         } catch {
@@ -46,7 +35,7 @@ class ChatInference {
         do {
             var inferenceParams = Dictionary<String, Any>()
             inferenceParams["setup"] = "Hi, how can I help you?"
-            let _ = try instance!.runOp("begin-chat", inferenceParams, progress);
+            let _ = try instance!.runOp("begin-chat", inferenceParams);
         } catch {
             print("Error running operation: \(error)")
         }
