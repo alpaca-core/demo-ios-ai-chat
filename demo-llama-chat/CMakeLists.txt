@@ -8,7 +8,7 @@ set(APP_BUNDLE_IDENTIFIER "LLamaChat")
 set(DEVELOPMENT_TEAM_ID "F6YK5TUHJ7")
 set(CODE_SIGN_IDENTITY "Apple Development")
 set(APP_BUNDLE_DISPLAY_NAME "LLama chat")
-set(DEPLOYMENT_TARGET 18.0)
+set(DEPLOYMENT_TARGET 16.6)
 
 set(PRODUCT_NAME ${APP_NAME})
 set(EXECUTABLE_NAME ${APP_NAME})
@@ -54,8 +54,7 @@ PUBLIC
 
 target_include_directories(${APP_NAME}
     PRIVATE
-    ${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug-iphoneos
-    ${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug-iphonesimulator
+        "${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug$(EFFECTIVE_PLATFORM_NAME)"
 )
 
 # From the Root CMAKE there are C++ compile options which conflict with Swift compiler
