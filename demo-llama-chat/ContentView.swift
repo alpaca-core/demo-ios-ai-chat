@@ -10,6 +10,7 @@ struct Message: Identifiable, Equatable {
 }
 
 struct ChatBubble: View {
+    @Environment(\.colorScheme) var colorScheme
     var message: Message
 
     var body: some View {
@@ -48,7 +49,7 @@ class ChatViewModel: ObservableObject {
 
 struct ModelSelector: View {
     // Options for the dropdown
-    static var modelNames = ["capybarahermes-2.5-mistral-7b.Q4_0"]
+    static var modelNames = [""]
     @Binding var selectedModel: String?
 
     @State private var registry: ModelRegistry
@@ -68,7 +69,7 @@ struct ModelSelector: View {
         VStack(spacing: 20) {
             Text("Select a model:")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(.gray)
 
             // Custom styled Picker
             Menu {
@@ -94,10 +95,10 @@ struct ModelSelector: View {
                 .background(Color.blue) // Messenger app color
                 .cornerRadius(10)
             }
-            .padding()
 
-            if !registry.exists(modelName: selectedModel!) {
+            if selectedModel! != "" && !registry.exists(modelName: selectedModel!) {
                 Text("Model must be downloaded first.")
+                    .foregroundStyle(.black)
                 Button("Download", action: {
                     manager!.progressCb = { (bytesWritten, totalBytes) -> Void in
                         let dp: Float = Float((Float(bytesWritten) / Float(totalBytes)) * 100).rounded()
@@ -131,7 +132,7 @@ struct ModelSelector: View {
 
         }
         .padding()
-        .background(Color(UIColor.systemGray6)) // Light background for contrast
+        .background(.white) // Light background for contrast
         .cornerRadius(12)
         .shadow(radius: 5) // Add shadow for depth
         .padding()
@@ -141,7 +142,7 @@ struct ModelSelector: View {
 struct ChatScreen: View {
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText: String = ""
-    @State private var selectedModel: String? = "capybarahermes-2.5-mistral-7b.Q4_0"
+    @State private var selectedModel: String? = ""
     private var manager: DownloadManager = DownloadManager()
     private var modelRegistry: ModelRegistry = ModelRegistry()
     private var chatInference: ChatInference = ChatInference()
@@ -185,6 +186,8 @@ struct ChatScreen: View {
                 TextField("Type a message", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(minHeight: 30)
+                    .cornerRadius(8) // Additional corner radius
+
 
                 Button(action: {
                     if !messageText.isEmpty {
@@ -209,6 +212,11 @@ struct ChatScreen: View {
 
 struct ChatScreen_Previews: PreviewProvider {
     static var previews: some View {
-        ChatScreen()
+        Group {
+            ChatScreen()
+                .preferredColorScheme(.light) // Preview in light mode
+            ChatScreen()
+                .preferredColorScheme(.dark) // Preview in dark mode
+        }
     }
 }

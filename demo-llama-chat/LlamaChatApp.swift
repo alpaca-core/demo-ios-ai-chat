@@ -8,6 +8,7 @@ struct LlamaChatApp: App {
     var body: some Scene {
         WindowGroup {
             ChatScreen()
+                .background(Color.white) // Make the background white for the entire app
         }
     }
 }
