@@ -19,12 +19,22 @@ struct ChatBubble: View {
                 Spacer()
             }
 
-            Text(message.text)
-                .padding()
-                .background(message.isSentByCurrentUser ? Color.blue : Color.gray.opacity(0.2))
-                .foregroundColor(message.isSentByCurrentUser ? .white : .black)
-                .cornerRadius(12)
-                .frame(maxWidth: 250, alignment: message.isSentByCurrentUser ? .trailing : .leading)
+            if message.text == "Waiting" {
+                VStack {
+                    TypingIndicator()
+                }
+                .padding(10)
+                .background(Color.gray.opacity(0.2))
+                .cornerRadius(10)
+            }
+            else {
+                Text(message.text)
+                    .padding()
+                    .background(message.isSentByCurrentUser ? Color.blue : Color.gray.opacity(0.2))
+                    .foregroundColor(message.isSentByCurrentUser ? .white : .black)
+                    .cornerRadius(12)
+                    .frame(maxWidth: 250, alignment: message.isSentByCurrentUser ? .trailing : .leading)
+            }
 
             if !message.isSentByCurrentUser {
                 Spacer()
@@ -43,6 +53,14 @@ class ChatViewModel: ObservableObject {
     func sendMessage(_ text: String, _ isUser: Bool) {
         let newMessage = Message(text: text, isSentByCurrentUser: isUser)
         messages.append(newMessage)
+    }
+
+    func addWaitingMessage() {
+        messages.append(Message(text: "Waiting", isSentByCurrentUser: false))
+    }
+
+    func removeWaitingMessage() {
+        messages.removeLast()
     }
 }
 
@@ -139,6 +157,29 @@ struct ModelSelector: View {
     }
 }
 
+struct TypingIndicator: View {
+    @State private var animate = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<3) { index in
+                Circle()
+                    .frame(width: 10, height: 10)
+                    .foregroundColor(.gray)
+                    .scaleEffect(animate ? 1.0 : 0.5)
+                    .animation(
+                        Animation.easeInOut(duration: 0.6)
+                            .repeatForever()
+                            .delay(0.2 * Double(index))
+                    )
+            }
+        }
+        .onAppear {
+            animate = true
+        }
+    }
+}
+
 struct ChatScreen: View {
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText: String = ""
@@ -146,13 +187,16 @@ struct ChatScreen: View {
     private var manager: DownloadManager = DownloadManager()
     private var modelRegistry: ModelRegistry = ModelRegistry()
     private var chatInference: ChatInference = ChatInference()
-    private var isLoading: Bool = false
+    @State private var isLoading: Bool = false
+    @State private var isWaitingResponse: Bool = false
 
     var body: some View {
         VStack {
-//            ProgressView("Loading...")
-//                .progressViewStyle(CircularProgressViewStyle())
-//                .padding()
+            if isLoading {
+                ProgressView("Loading the model...")
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .padding()
+            }
 
             ModelSelector(registry: modelRegistry, selectedModel: $selectedModel, manager: manager)
                 .onChange(of: selectedModel, perform: { model in
@@ -160,12 +204,15 @@ struct ChatScreen: View {
                         print("Loading model: \(model)")
                         let fullModelPath = modelRegistry.getModelLocalPath(modelName: model)
                         if fullModelPath != nil {
+                            isLoading = true
                             Task {
                                 let _ = await chatInference.createInstance(modelName: selectedModel!, modelPath: fullModelPath!)
+                                isLoading = false
                             }
                         }
                     }
                 })
+
             ScrollViewReader { scrollView in
                 ScrollView {
                     ForEach(viewModel.messages) { message in
@@ -173,6 +220,7 @@ struct ChatScreen: View {
                             .id(message.id)
                     }
                     .padding(.horizontal)
+
                 }
                 .onChange(of: viewModel.messages) { _ in
                     if let lastIndex = viewModel.messages.last?.id {
@@ -183,20 +231,22 @@ struct ChatScreen: View {
                 }
             }
 
-
             HStack {
                 TextField("Type a message", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(minHeight: 30)
                     .cornerRadius(8) // Additional corner radius
 
-
                 Button(action: {
                     if !messageText.isEmpty {
                         viewModel.sendMessage(messageText, true)
+                        isWaitingResponse = true
+                        viewModel.addWaitingMessage()
                         Task {
-                            var resultText = await chatInference.sendPrompt(messageText)
+                            let resultText = await chatInference.sendPrompt(messageText)
+                            viewModel.removeWaitingMessage()
                             viewModel.sendMessage(resultText, false)
+                            isWaitingResponse = false
                         }
                         messageText = ""
                     }
@@ -217,9 +267,9 @@ struct ChatScreen: View {
 struct ChatScreen_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            ChatScreen()
+            TypingIndicator()
                 .preferredColorScheme(.light) // Preview in light mode
-            ChatScreen()
+            TypingIndicator()
                 .preferredColorScheme(.dark) // Preview in dark mode
         }
     }
