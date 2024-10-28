@@ -32,7 +32,7 @@ class ChatInference {
                     continuation.resume(throwing: error)
                 }
             }
-            params["ctx_size"] = 16
+            params["ctx_size"] = 2048
             instance = try await withCheckedThrowingContinuation { continuation in
                 do {
                     let instance = try model.createInstance("general", params)
