@@ -1,4 +1,4 @@
-# dem-ios-llama-chat
+# Demo iOS AI chat
 
 iOS AI chat demo of the [Alpaca Core Local SDK](https://github.com/alpaca-core/ac-local)
 
