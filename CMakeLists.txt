@@ -22,7 +22,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # modules to bin
 # add cmake modules
 include(./cmake/ac_dep.cmake)
 
-project(demo-ios-llama-chat
+project(demo-ios-ai-chat
     LANGUAGES CXX Swift
 )
 
