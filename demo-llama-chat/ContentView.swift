@@ -46,13 +46,15 @@ struct ChatBubble: View {
 }
 
 class ChatViewModel: ObservableObject {
-    @Published var messages: [Message] = [
-        Message(text: "Hi, how can I help you?", isSentByCurrentUser: false)
-    ]
+    @Published var messages: [Message] = []
 
     func sendMessage(_ text: String, _ isUser: Bool) {
         let newMessage = Message(text: text, isSentByCurrentUser: isUser)
         messages.append(newMessage)
+    }
+
+    func clearMessages() {
+        messages.removeAll()
     }
 
     func addWaitingMessage() {
@@ -208,6 +210,8 @@ struct ChatScreen: View {
                             Task {
                                 let _ = await chatInference.createInstance(modelName: selectedModel!, modelPath: fullModelPath!)
                                 isLoading = false
+                                viewModel.clearMessages()
+                                viewModel.sendMessage("Hi, how can I help you?", false)
                             }
                         }
                     }
