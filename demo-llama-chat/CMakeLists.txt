@@ -52,10 +52,12 @@ PUBLIC
   $<$<COMPILE_LANGUAGE:Swift>:-cxx-interoperability-mode=default -Xcc -std=c++20 -Onone>
 )
 
+if(CMAKE_GENERATOR STREQUAL Xcode)
 target_include_directories(${APP_NAME}
     PRIVATE
         "${CMAKE_BINARY_DIR}/ac-local/wrapper/swift/code/CxxAlpacaCore/Debug$(EFFECTIVE_PLATFORM_NAME)"
 )
+endif()
 
 # From the Root CMAKE there are C++ compile options which conflict with Swift compiler
 # so we clear them here
