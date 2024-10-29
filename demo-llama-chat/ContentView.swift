@@ -116,13 +116,13 @@ struct ModelSelector: View {
                 .cornerRadius(10)
             }
 
-            if selectedModel! != "" && !registry.exists(modelName: selectedModel!) {
+            if selectedModel! != "" && !registry.exists(modelName: selectedModel!) && !isDownloading {
                 Text("Model must be downloaded first.")
                     .foregroundStyle(.black)
                 Button("Download", action: {
                     manager!.progressCb = { (bytesWritten, totalBytes) -> Void in
                         let dp: Float = Float((Float(bytesWritten) / Float(totalBytes)) * 100).rounded()
-                        downloadProgressText = "Progress \(dp)"
+                        downloadProgressText = "Progress: \(dp)%"
                     }
 
                     manager!.finishCb = { (filePath) -> Void in
@@ -143,9 +143,13 @@ struct ModelSelector: View {
             }
 
             if (isDownloading) {
+                Text("Please don't switch the model while downloading.")
+                    .foregroundStyle(.black)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
                 Text(downloadProgressText)
                     .padding()
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.black)
             }
 
         }
