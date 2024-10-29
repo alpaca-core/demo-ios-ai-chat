@@ -246,8 +246,9 @@ struct ChatScreen: View {
                         viewModel.sendMessage(messageText, true)
                         isWaitingResponse = true
                         viewModel.addWaitingMessage()
+                        let prompt = messageText
                         Task {
-                            let resultText = await chatInference.sendPrompt(messageText)
+                            let resultText = await chatInference.sendPrompt(prompt)
                             viewModel.removeWaitingMessage()
                             viewModel.sendMessage(resultText, false)
                             isWaitingResponse = false
