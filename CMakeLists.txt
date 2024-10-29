@@ -34,5 +34,9 @@ set(AC_SWIFT_WRAPPER ON)
 set(BUILD_SHARED_LIBS OFF)
 
 add_subdirectory(ac-local)
-add_subdirectory(demo-llama-chat)
+
+if(CMAKE_GENERATOR STREQUAL Xcode)
+    # The demo is only for Xcode since we set specific flags for it
+    add_subdirectory(demo-llama-chat)
+endif()
 
