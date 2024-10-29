@@ -122,8 +122,6 @@ struct ModelSelector: View {
                 Button("Download", action: {
                     manager!.progressCb = { (bytesWritten, totalBytes) -> Void in
                         let dp: Float = Float((Float(bytesWritten) / Float(totalBytes)) * 100).rounded()
-
-//                        print("Progress \(dp)")
                         downloadProgressText = "Progress \(dp)"
                     }
 
