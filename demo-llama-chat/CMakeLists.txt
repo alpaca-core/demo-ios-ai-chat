@@ -26,11 +26,13 @@ set(APP_HEADER_FILES
 )
 
 set(APP_SOURCE_FILES
-    ./ContentView.swift
     ./LlamaChatApp.swift
     ./DownloadManager.swift
     ./ModelRegistry.swift
     ./ChatInference.swift
+    ./ModelSelectorView.swift
+    ./TypingIndicatorView.swift
+    ./ChatScreenView.swift
 )
 
 ac_dep(test-data-llama)
