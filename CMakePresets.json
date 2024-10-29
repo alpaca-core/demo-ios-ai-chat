@@ -1,0 +1,17 @@
+{
+    "version": 3,
+    "configurePresets": [
+      {
+        "name": "ios-xcode",
+        "hidden": false,
+        "generator": "Xcode",
+        "binaryDir": "${sourceDir}/out/build/${presetName}",
+        "installDir": "${sourceDir}/out/install/${presetName}",
+        "cacheVariables": {
+            "CMAKE_OSX_ARCHITECTURES": "arm64",
+            "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchains/iOS.cmake",
+            "CMAKE_OSX_SYSROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+        }
+      }
+    ]
+}

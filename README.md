@@ -11,6 +11,14 @@ To build the project you'll need:
 
 To generate the Xcode project run the following commands:
 
+- Preset:
+
+```
+cmake --preset ios-xcode
+```
+
+- Manually:
+
 ```
 mkdir out
 cd out

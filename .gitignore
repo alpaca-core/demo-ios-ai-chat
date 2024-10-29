@@ -1,2 +1,5 @@
+# Ignore the build artifacts
+/out
 /build
+# Ignore the generated files
 /gen
