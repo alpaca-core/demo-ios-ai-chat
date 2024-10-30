@@ -1,7 +1,7 @@
 {
     "version": 3,
     "configurePresets": [
-      {
+    {
         "name": "ios-xcode",
         "hidden": false,
         "generator": "Xcode",
@@ -10,8 +10,9 @@
         "cacheVariables": {
             "CMAKE_OSX_ARCHITECTURES": "arm64",
             "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchains/iOS.cmake",
-            "CMAKE_OSX_SYSROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+            "CMAKE_OSX_SYSROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk",
+            "CMAKE_OSX_DEPLOYMENT_TARGET": "16.6"
         }
-      }
+    }
     ]
 }
