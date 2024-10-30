@@ -5,7 +5,7 @@ import AlpacaCoreSwift
 import UIKit
 
 func progress(_ tag: String, _ progress: Float) {
-    print("[\(tag)]Progress: \(progress)")
+    print("[\(tag)] Progress: \(progress)")
 }
 
 class ChatInference {
@@ -26,7 +26,8 @@ class ChatInference {
         do {
             let model = try await withCheckedThrowingContinuation { continuation in
                 do {
-                    let model = try createModel(&desc, params)
+
+                    let model = try createModel(&desc, params, progress)
                     continuation.resume(returning: model)
                 } catch {
                     continuation.resume(throwing: error)
